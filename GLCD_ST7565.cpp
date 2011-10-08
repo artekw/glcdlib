@@ -17,7 +17,6 @@
 #define PIN_SCLK 8
 #define PIN_A0   7
 #define PIN_RST  6
-#define PIN_CS   5
 
 #define LCDUNUSEDSTARTBYTES 1
 
@@ -108,7 +107,6 @@ static void st7565_Init() {
     pinMode(PIN_SCLK, OUTPUT);
     pinMode(PIN_A0,   OUTPUT);
     pinMode(PIN_RST,  OUTPUT);
-    digitalWrite(PIN_CS, LOW);
 
     digitalWrite(PIN_RST, LOW);
     _delay_ms(500);
