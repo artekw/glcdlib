@@ -13,12 +13,13 @@
 #include "GLCD_ST7565.h"
 #include "GLCD_ST7565_cmds.h"
 
-#define PIN_SID  14
-#define PIN_SCLK 4
-#define PIN_A0   17
-#define PIN_RST  7
+#define PIN_SID  9
+#define PIN_SCLK 8
+#define PIN_A0   7
+#define PIN_RST  6
+#define PIN_CS   5
 
-#define LCDUNUSEDSTARTBYTES 4
+#define LCDUNUSEDSTARTBYTES 1
 
 #define swap(a, b) { byte t = a; a = b; b = t; }
 
@@ -61,15 +62,15 @@ static void SPIWrite(byte c) {
     shiftOut(PIN_SID, PIN_SCLK, MSBFIRST, c);
 #else
     for (byte mask = 0x80; mask != 0; mask >>= 1) {
-        bitWrite(PORTC, 0, c & mask);
+        bitWrite(PORTB, 1, c & mask);
         // this is 15% faster, but it's too fast for this chip...
         //PIND = bit(4);
         //PIND = bit(4);
         // even plain set/clear is too fast, so slow down a bit more
-        bitSet(PORTD, 4);
-        bitSet(PORTD, 4);
-        bitClear(PORTD, 4);
-        bitClear(PORTD, 4);
+        bitSet(PORTB, 0);
+        bitSet(PORTB, 0);
+        bitClear(PORTB, 0);
+        bitClear(PORTB, 0);
     }
 #endif
 }
@@ -78,7 +79,7 @@ static void st7565_Command(byte c) {
 #ifdef slowSPI
     digitalWrite(PIN_A0, LOW);
 #else
-    bitClear(PORTC, 3);
+    bitClear(PORTD, 7);
 #endif
     SPIWrite(c);
 }
@@ -87,7 +88,7 @@ static void st7565_Data(byte c) {
 #ifdef slowSPI
     digitalWrite(PIN_A0, HIGH);
 #else
-    bitSet(PORTC, 3);
+    bitSet(PORTD, 7);
 #endif
     SPIWrite(c);
 }
@@ -107,18 +108,18 @@ static void st7565_Init() {
     pinMode(PIN_SCLK, OUTPUT);
     pinMode(PIN_A0,   OUTPUT);
     pinMode(PIN_RST,  OUTPUT);
+    digitalWrite(PIN_CS, LOW);
 
     digitalWrite(PIN_RST, LOW);
     _delay_ms(500);
     digitalWrite(PIN_RST, HIGH);
 
-    st7565_Command(CMD_SET_BIAS_7);
+    st7565_Command(CMD_SET_BIAS_9);
     st7565_Command(CMD_SET_ADC_NORMAL);
     st7565_Command(CMD_SET_COM_NORMAL);
     st7565_Command(CMD_SET_DISP_START_LINE);
     st7565_Command(CMD_SET_POWER_CONTROL);
     st7565_Command(CMD_SET_RESISTOR_RATIO);
-    // st7565_Command(CMD_SET_BIAS_9);
 
 #if enablePartialUpdate
     xUpdateMax = 0;
@@ -132,7 +133,7 @@ void GLCD_ST7565::begin() {
     st7565_Init();
     st7565_Command(CMD_DISPLAY_ON);
     st7565_Command(CMD_SET_ALLPTS_NORMAL);
-    st7565_Set_Brightness(0x15); // strictly speaking this is the contrast of the LCD panel, the twist on the crystals.
+    st7565_Set_Brightness(0x14); // strictly speaking this is the contrast of the LCD panel, the twist on the crystals.
     clear();
 }
 
@@ -533,7 +534,7 @@ void GLCD_ST7565::refresh() {
         st7565_Command(CMD_RMW);
         // With column offset set to 4 you don't need or want this.
         for (byte c = 0; c < 128; c++)
-            st7565_Data(gLCDBuf[(128*p)+c]);
+           st7565_Data(gLCDBuf[(128*p)+c]);
     }
 #endif
 }

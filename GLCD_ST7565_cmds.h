@@ -32,7 +32,7 @@
 #define CMD_SET_COM_NORMAL      0xC0        // 15
 #define CMD_SET_COM_REVERSE     0xC8        // 15
 #define CMD_SET_POWER_CONTROL   0x2F        // 16
-#define CMD_SET_RESISTOR_RATIO  0x24        // 17
+#define CMD_SET_RESISTOR_RATIO  0x26        // 17
 #define CMD_SET_VOLUME_FIRST    0x81        // 18
 #define CMD_SET_VOLUME_SECOND   0x00        // 18
 #define CMD_SET_STATIC_OFF      0xAC        // 19
