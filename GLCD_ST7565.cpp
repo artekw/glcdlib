@@ -12,21 +12,16 @@
 #include <stdlib.h>
 #include "GLCD_ST7565.h"
 #include "GLCD_ST7565_cmds.h"
-
-//#define PIN_SID  9
-//#define PIN_SCLK 8
-//#define PIN_A0   7
-//#define PIN_RST  6
-
-#define PIN_CS   3
-#define PIN_SID  4
+/*
+sensnodeGLCD
+*/
+#define PIN_SID  6
 #define PIN_SCLK 5
-#define PIN_A0   6
-#define PIN_RST  7
+#define PIN_A0   4
+// #define PIN_RST  3
+#define PIN_CS   3
 
-
-
-#define LCDUNUSEDSTARTBYTES 0
+#define LCDUNUSEDSTARTBYTES 4
 
 #define swap(a, b) { byte t = a; a = b; b = t; }
 
@@ -41,7 +36,7 @@ struct FontInfo {
 static byte gLCDBuf[1024];
 
 // Switch from fast direct bit flipping to slower Arduino bit writes.
-#define slowSPI
+//#define slowSPI
 
 // This makes the library track where changes have occurred and only update the smallest rectangle required
 // If you are writing direct to the gLCDBuf you will either need to turn this off, or call setUpdateArea() with the
@@ -51,7 +46,7 @@ static byte gLCDBuf[1024];
 // moves some of the enablePartialUpdate logic further up the procedure tree. Removing it from setPixel and putting
 // it into the higher level routines such as draw/fill rect/circle/triangle. Makes the sketch larger, but faster in
 // graphical intensive applications.
-#define tradeSizeForSpeed 1  // This needs enablePartialUpdate
+#define tradeSizeForSpeed 0  // This needs enablePartialUpdate
 
 #if enablePartialUpdate
 static byte xUpdateMin;
@@ -62,14 +57,14 @@ static byte yUpdateMax;
 
 // If the top line is appearing halfway down the screen, try the other mode.
 #define PAGE_FLIP 0x7
-// #define PAGE_FLIP 0x3
+//#define PAGE_FLIP 0x3
 
 static void SPIWrite(byte c) {
 #ifdef slowSPI
     shiftOut(PIN_SID, PIN_SCLK, MSBFIRST, c);
 #else
     for (byte mask = 0x80; mask != 0; mask >>= 1) {
-        bitWrite(PORTD, 4, c & mask);
+        bitWrite(PORTD, 6, c & mask);
         // this is 15% faster, but it's too fast for this chip...
         //PIND = bit(4);
         //PIND = bit(4);
@@ -86,7 +81,7 @@ static void st7565_Command(byte c) {
 #ifdef slowSPI
     digitalWrite(PIN_A0, LOW);
 #else
-    bitClear(PORTD, 6);
+    bitClear(PORTD, 4);
 #endif
     SPIWrite(c);
 }
@@ -95,7 +90,7 @@ static void st7565_Data(byte c) {
 #ifdef slowSPI
     digitalWrite(PIN_A0, HIGH);
 #else
-    bitSet(PORTD, 6);
+    bitSet(PORTD, 4);
 #endif
     SPIWrite(c);
 }
@@ -114,27 +109,23 @@ static void st7565_Init() {
     pinMode(PIN_SID,  OUTPUT);
     pinMode(PIN_SCLK, OUTPUT);
     pinMode(PIN_A0,   OUTPUT);
-    pinMode(PIN_RST,  OUTPUT);	
-	pinMode(PIN_CS,   OUTPUT);
-	
-	if (PIN_CS > 0)
-      digitalWrite(PIN_CS, LOW);
+//    pinMode(PIN_RST,  OUTPUT);
+    pinMode(PIN_CS,   OUTPUT);
 
-    digitalWrite(PIN_RST, LOW);
-    _delay_ms(500);
-    digitalWrite(PIN_RST, HIGH);
+//    digitalWrite(PIN_RST, LOW);
+//    _delay_ms(500);
+//    digitalWrite(PIN_RST, HIGH);
 
-	st7565_Command(CMD_SET_BIAS_9);
+if (PIN_CS > 0)
+    digitalWrite(PIN_CS, LOW);
+
+    st7565_Command(CMD_SET_BIAS_7);
     st7565_Command(CMD_SET_ADC_NORMAL);
-    st7565_Command(CMD_SET_COM_NORMAL);	
+    st7565_Command(CMD_SET_COM_NORMAL);
     st7565_Command(CMD_SET_DISP_START_LINE);
-	st7565_Command(CMD_SET_POWER_CONTROL | 0x4);
-	_delay_ms(50);
-	st7565_Command(CMD_SET_POWER_CONTROL | 0x6);
-	_delay_ms(50);
-	st7565_Command(CMD_SET_POWER_CONTROL | 0x7);
-	_delay_ms(10);
-	st7565_Command(CMD_SET_RESISTOR_RATIO | 0x6);
+    st7565_Command(CMD_SET_POWER_CONTROL);
+    st7565_Command(CMD_SET_RESISTOR_RATIO);
+    // st7565_Command(CMD_SET_BIAS_9);
 
 #if enablePartialUpdate
     xUpdateMax = 0;
@@ -144,16 +135,17 @@ static void st7565_Init() {
 #endif
 }
 
-void GLCD_ST7565::begin() {
+void GLCD_ST7565::begin(byte contrast) {
     st7565_Init();
     st7565_Command(CMD_DISPLAY_ON);
-//    st7565_Command(CMD_SET_ALLPTS_NORMAL);
-    st7565_Set_Brightness(0x15); // strictly speaking this is the contrast of the LCD panel, the twist on the crystals.
+    st7565_Command(CMD_SET_ALLPTS_NORMAL);
+    st7565_Set_Brightness(contrast); // strictly speaking this is the contrast
+                              // of the LCD panel, the twist on the crystals.
     clear();
 }
 
 void GLCD_ST7565::backLight(byte level) {
-    analogWrite(3, level);
+    analogWrite(9, level);
 }
 
 // the most basic function, set a single pixel
@@ -549,7 +541,7 @@ void GLCD_ST7565::refresh() {
         st7565_Command(CMD_RMW);
         // With column offset set to 4 you don't need or want this.
         for (byte c = 0; c < 128; c++)
-           st7565_Data(gLCDBuf[(128*p)+c]);
+            st7565_Data(gLCDBuf[(128*p)+c]);
     }
 #endif
 }
